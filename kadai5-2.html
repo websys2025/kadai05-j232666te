@@ -4,9 +4,9 @@
     <title>演習課題5-2：外部APIの呼び出しテスト</title>
 </head>
 <body>
-    <h1 id="msg">何かのAPI</h1>
+    <h1 id="msg">千葉県のお天気API</h1>
     <form name="apiform"><p>
-        何かのフォーム：<input type="text" name="form_data">
+        千葉県と入力：<input type="text" name="form_data">
         <button type="button" id="btn1" onclick="some_api(this.form)">実行</button>
     </p></form>
     
@@ -14,9 +14,60 @@
     <script>
         async function some_api(myForm) {
             // ここにコードを書く
-            document.getElementById("result").innerHTML += myForm.form_data.value+"<br />";
-            document.apiform.reset();
+            const endpoint = "https://api.open-meteo.com/v1/forecast";
+            const latitude = 35.6074;
+            const longitude = 140.1065;
+            const url = `${endpoint}?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+            document.getElementById("result").innerHTML += myForm.form_data.value + "<br />";
+
+            function getWeatherDescription(code) {
+                const weatherMap = {
+                    0: "晴れ",
+                    1: "ほぼ晴れ",
+                    2: "曇りがち",
+                    3: "曇り",
+                    45: "霧",
+                    48: "霧（霜）",
+                    51: "霧雨（弱）",
+                    53: "霧雨（中）",
+                    55: "霧雨（強）",
+                    61: "小雨（弱）",
+                    63: "小雨（中）",
+                    65: "小雨（強）",
+                    80: "にわか雨（弱）",
+                    81: "にわか雨（中）",
+                    82: "にわか雨（強）",
+                    95: "雷雨（弱～中）",
+                    96: "雷雨（雹あり・弱）",
+                    99: "雷雨（雹あり・強）"
+            };
+            return weatherMap[code] || "不明な天気コード：" + code;
         }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.current_weather) {
+                        const weather = data.current_weather;
+                        const resultText = `
+                            <b>現在の天気（千葉）：</b><br>
+                            天気：${getWeatherDescription(weather.weathercode)}<br>
+                            気温：${weather.temperature}℃<br>
+                            風速：${weather.windspeed} km/h<br>
+                            観測時刻：${weather.time}<br><br>
+                        `;
+                    document.getElementById("result").innerHTML += resultText;
+                } else {
+                    document.getElementById("result").innerHTML += "天気データが取得できませんでした。";
+                }
+            })
+            .catch(error => {
+                document.getElementById("result").innerHTML += "エラーが発生しました。";
+                console.error("API呼び出しエラー:", error);
+            });
+
+        document.apiform.reset();
+    }
     </script>
 </body>
 </html>
