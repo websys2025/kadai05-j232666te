@@ -14,11 +14,11 @@
     <script>
         async function some_api(myForm) {
             // ここにコードを書く
-            document.getElementById("result").innerHTML += myForm.form_data.value+"<br />";
+            const endpoint = "https://api.open-meteo.com/v1/forecast";
             const latitude = 35.6074;
             const longitude = 140.1065;
-
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+            const url = `${endpoint}?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+            document.getElementById("result").innerHTML += myForm.form_data.value + "<br />";
 
             function getWeatherDescription(code) {
                 const weatherMap = {
@@ -44,25 +44,30 @@
             return weatherMap[code] || "不明な天気コード：" + code;
         }
 
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("APIの呼び出しに失敗しました");
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.current_weather) {
+                        const weather = data.current_weather;
+                        const resultText = `
+                            <b>現在の天気（千葉）：</b><br>
+                            天気：${getWeatherDescription(weather.weathercode)}<br>
+                            気温：${weather.temperature}℃<br>
+                            風速：${weather.windspeed} km/h<br>
+                            観測時刻：${weather.time}<br><br>
+                        `;
+                    document.getElementById("result").innerHTML += resultText;
+                } else {
+                    document.getElementById("result").innerHTML += "天気データが取得できませんでした。";
+                }
+            })
+            .catch(error => {
+                document.getElementById("result").innerHTML += "エラーが発生しました。";
+                console.error("API呼び出しエラー:", error);
+            });
 
-                const data = await response.json();
-                const weather = data.current_weather;
-
-                let output = `<b>現在の天気（千葉）：</b><br>`;
-                output += `天気：${getWeatherDescription(weather.weathercode)}<br>`;
-                output += `気温：${weather.temperature}℃<br>`;
-                output += `風速：${weather.windspeed} km/h<br>`;
-                output += `観測時刻：${weather.time}<br><br>`;
-
-                document.getElementById("result").innerHTML += output;
-            } catch (error) {
-                document.getElementById("result").innerHTML += "エラー：" + error.message + "<br />";
-            } 
-            document.apiform.reset();
-        }
+        document.apiform.reset();
+    }
     </script>
 </body>
 </html>
